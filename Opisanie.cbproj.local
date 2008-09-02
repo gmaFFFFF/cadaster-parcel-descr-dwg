@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2008.06.29 20:51:15.500.cpp,C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Unit1.cpp=C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Описание\MainForm.cpp</Transaction>
+    <Transaction>2008.06.29 20:51:15.500.h,C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Unit1.h=C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Описание\MainForm.h</Transaction>
+    <Transaction>2008.06.29 20:51:15.500.dfm,C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Unit1.dfm=C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Описание\MainForm.dfm</Transaction>
+    <Transaction>2008.06.29 20:51:31.953.cbproj,C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Project1.cbproj=C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Описание\Opisanie.cbproj</Transaction>
+    <Transaction>2008.06.29 20:54:14.984.cpp,C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Описание\Unit1.cpp=C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Описание\classes.cpp</Transaction>
+    <Transaction>2008.06.29 20:54:14.984.h,C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Описание\Unit1.h=C:\Documents and Settings\FFFFF\Мои документы\RAD Studio\Projects\Описание\classes.h</Transaction>
+    <Transaction>2008.07.02 02:48:41.566.lib,C:\Program Files\CodeGear\RAD Studio\5.0\lib\release\vcl.lib=</Transaction>
+    <Transaction>2008.07.04 10:09:40.593.cpp,D:\My Documments\My Text\Programming\Ready\Описание\classes.cpp=D:\My Documments\My Text\Programming\Ready\Описание\myClasses.cpp</Transaction>
+    <Transaction>2008.07.04 10:09:40.593.h,D:\My Documments\My Text\Programming\Ready\Описание\classes.h=D:\My Documments\My Text\Programming\Ready\Описание\myClasses.h</Transaction>
+    <Transaction>2008.08.19 12:25:01.500.cpp,D:\My Documments\My Text\Programming\Development\Описание\BasicDialogForm.cpp=</Transaction>
+    <Transaction>2008.08.19 12:25:01.500.dfm,D:\My Documments\My Text\Programming\Development\Описание\BasicDialogForm.dfm=</Transaction>
+    <Transaction>2008.08.19 12:35:44.968.cpp,D:\My Documments\My Text\Programming\Development\Описание\BasicDialogForm.cpp=</Transaction>
+    <Transaction>2008.08.19 12:35:44.968.dfm,D:\My Documments\My Text\Programming\Development\Описание\BasicDialogForm.dfm=</Transaction>
+    <Transaction>2008.08.19 12:35:48.515.cpp,D:\My Documments\My Text\Programming\Development\Описание\BasicForm.cpp=</Transaction>
+    <Transaction>2008.08.19 12:35:48.515.dfm,D:\My Documments\My Text\Programming\Development\Описание\BasicForm.dfm=</Transaction>
+  </Transactions>
+</BorlandProject>
