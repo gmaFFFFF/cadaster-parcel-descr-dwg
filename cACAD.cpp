@@ -155,7 +155,7 @@ void cACAD::CalculateScaleVP(const list<CPoint>& points) const
     maxLimitDrawing = *(points.begin());
 	//Уточняем максимальные и минимальные пределы чертежа по другим точкам
 	std::for_each(points.begin(),points.end(),&SetMaxMinLimit);
-	//Определяем необходимый масштаб видового экрана по оси Х
+	//Определяем необходимый масштаб видового экрана
 	const float scaleMultip = 1.1;
 	CPoint bottomRight("",minLimitDrawing.GetNord(),maxLimitDrawing.GetEast());
 	CPoint topLeft("",maxLimitDrawing.GetNord(),minLimitDrawing.GetEast());
@@ -234,14 +234,14 @@ Variant cACAD::GetCoord(const CPoint& point,double z)
 	return temp;
 }
 //---------------------------------------------------------------------------
-bool cACAD::GetSelectParcel(Parcel& p)const
+bool cACAD::GetSelectParcel(Parcel& p,AnsiString msg)const
 {
 	IDispatch* disp=0;
 	AcadObject* obj=0;
 	AcadLWPolyline* pline=0;
 	Variant Pickedpoint;
 
-	acad->ActiveDocument->Utility->GetEntity(&disp,Pickedpoint,Variant("Укажите участок... "));
+	acad->ActiveDocument->Utility->GetEntity(&disp,Pickedpoint,Variant(msg.c_str()));
 	if(!disp)
 		return false;
 	disp->QueryInterface(IID_IAcadObject,(void**)&obj);
@@ -312,3 +312,139 @@ void cACAD::GetPoints(list<CAutoCADPoint>& points)const
 	}
 }
 //---------------------------------------------------------------------------
+void cACAD::DrawKadSetka(double scale,CPoint ParcelMaxCoord,CPoint ParcelMinCoord,
+CPoint KwartalMaxCoord, CPoint KwartalMinCoord)
+{
+	double textH = 2;
+	textH *= scale;
+	double otstup = textH * 2;
+
+	//Рисуем внутреннюю рамку...
+	IAcadLine* acLine;
+	Variant StartPoint = GetCoord(ParcelMinCoord);
+	Variant EndPoint   = GetCoord(CPoint("",ParcelMaxCoord.GetNord(),ParcelMinCoord.GetEast()));
+	acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+
+	StartPoint = GetCoord(CPoint("",ParcelMaxCoord.GetNord(),ParcelMinCoord.GetEast()));
+	EndPoint   = GetCoord(ParcelMaxCoord);
+	acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+
+	StartPoint = GetCoord(ParcelMaxCoord);
+	EndPoint   = GetCoord(CPoint("",ParcelMinCoord.GetNord(),ParcelMaxCoord.GetEast()));
+	acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+
+	StartPoint = GetCoord(CPoint("",ParcelMinCoord.GetNord(),ParcelMaxCoord.GetEast()));
+	EndPoint   = GetCoord(ParcelMinCoord);
+	acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+
+	//Рисуем внешнюю рамку...
+	CPoint ramMinCoord("",ParcelMinCoord.GetNord() - otstup,ParcelMinCoord.GetEast() - otstup);
+	CPoint ramMaxCoord("",ParcelMaxCoord.GetNord() + otstup,ParcelMaxCoord.GetEast() + otstup);
+	StartPoint = GetCoord(ramMinCoord);
+	EndPoint   = GetCoord(CPoint("",ramMaxCoord.GetNord(),ramMinCoord.GetEast()));
+	acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+
+	StartPoint = GetCoord(CPoint("",ramMaxCoord.GetNord(),ramMinCoord.GetEast()));
+	EndPoint   = GetCoord(ramMaxCoord);
+	acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+
+	StartPoint = GetCoord(ramMaxCoord);
+	EndPoint   = GetCoord(CPoint("",ramMinCoord.GetNord(),ramMaxCoord.GetEast()));
+	acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+
+	StartPoint = GetCoord(CPoint("",ramMinCoord.GetNord(),ramMaxCoord.GetEast()));
+	EndPoint   = GetCoord(ramMinCoord);
+	acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+
+	//Расчитываем интервал через которой проходит сетка
+	double intervalEast = (KwartalMaxCoord.GetEast() - KwartalMinCoord.GetEast())/10;
+	double intervalNord = (KwartalMaxCoord.GetNord() - KwartalMinCoord.GetNord())/10;
+
+	char* horDel = "АБВГДЕЖИКЛ";
+	char* verDel = "9876543210";
+
+	IAcadMText* acText;
+	//Вычерчиваем вертикальную сетку
+	for(int i = 0; i <= 10; i++)
+	{
+		double left = KwartalMinCoord.GetEast() + intervalEast * i;
+		double right = KwartalMinCoord.GetEast() + intervalEast * (i + 1);
+		double nord_up = ParcelMaxCoord.GetNord();
+		double nord_down = ParcelMinCoord.GetNord();
+
+		if((ParcelMinCoord.GetEast() - left) > intervalEast)
+			continue;
+		else if(left > ParcelMaxCoord.GetEast())
+			break;
+
+		if(left >= ParcelMinCoord.GetEast())
+		{
+			StartPoint = GetCoord(CPoint("",nord_up,left));
+			EndPoint   = GetCoord(CPoint("",nord_up+otstup,left));
+			acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+			StartPoint = GetCoord(CPoint("",nord_down,left));
+			EndPoint   = GetCoord(CPoint("",nord_down-otstup,left));
+			acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+		}
+		if (i < 10)
+		{
+			if (left < ParcelMinCoord.GetEast())
+				left = ParcelMinCoord.GetEast();
+			if (right > ParcelMaxCoord.GetEast())
+				right = ParcelMaxCoord.GetEast();
+
+			double interval = right - left;
+			if (interval < textH)
+				continue;
+
+			double insCoordE = left + interval/2 - textH/2;
+			Variant str = AnsiString(horDel[i]);
+			acad->ActiveDocument->ModelSpace->AddMText(GetCoord(CPoint("",nord_up+otstup - (otstup - textH)/2,insCoordE)),textH,str,&acText);
+			acText->Height = textH;
+			acad->ActiveDocument->ModelSpace->AddMText(GetCoord(CPoint("",nord_down - (otstup - textH)/2,insCoordE)),textH,str,&acText);
+			acText->Height = textH;
+		}
+	}
+	//Вычерчиваем горизонтальную сетку
+	for(int i = 0; i <= 10; i++)
+	{
+		double down = KwartalMinCoord.GetNord() + intervalNord * i;
+		double up = KwartalMinCoord.GetNord() + intervalNord * (i + 1);
+		double east_right = ParcelMaxCoord.GetEast();
+		double east_left = ParcelMinCoord.GetEast();
+
+		if((ParcelMinCoord.GetNord() - down) > intervalNord)
+			continue;
+		else if(down > ParcelMaxCoord.GetNord())
+			break;
+
+		if(down >= ParcelMinCoord.GetNord())
+		{
+			StartPoint = GetCoord(CPoint("",down,east_left));
+			EndPoint   = GetCoord(CPoint("",down,east_left - otstup));
+			acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+			StartPoint = GetCoord(CPoint("",down,east_right));
+			EndPoint   = GetCoord(CPoint("",down,east_right + otstup));
+			acad->ActiveDocument->ModelSpace->AddLine(StartPoint,EndPoint,&acLine);
+		}
+		if (i < 10)
+		{
+			if (down < ParcelMinCoord.GetNord())
+				down = ParcelMinCoord.GetNord();
+			if (up > ParcelMaxCoord.GetNord())
+				up = ParcelMaxCoord.GetNord();
+
+			double interval = up - down;
+			if (interval < textH)
+				continue;
+
+			double insCoordN = down + interval/2 + textH/2;
+			Variant str = AnsiString(verDel[i]);
+			acad->ActiveDocument->ModelSpace->AddMText(GetCoord(CPoint("",insCoordN,east_left  - otstup*0.5 - textH/3)),textH,str,&acText);
+			acText->Height = textH;
+			acad->ActiveDocument->ModelSpace->AddMText(GetCoord(CPoint("",insCoordN,east_right + otstup*0.5 - textH/3)),textH,str,&acText);
+			acText->Height = textH;
+		}
+
+	}
+}

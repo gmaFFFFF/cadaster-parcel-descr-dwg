@@ -8,10 +8,15 @@
 #pragma hdrstop
 
 #include "MainForm.h"
+#include "FKadSetka.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
-
+namespace
+{
+	enum LIST_EXCEL{number_opisanie1_sheet = 1,number_opisanie2_sheet = 2,number_egrz_sheet = 3,
+					number_geo_data_sheet = 4,number_area_sheet = 5,number_katalog_sheet = 6};
+}
 TForm1 *Form1;
 //---------------------------------------------------------------------------
 __fastcall TForm1::TForm1(TComponent* Owner)
@@ -47,7 +52,7 @@ void __fastcall TForm1::WMDROPFILES(TMessage &Msg)
 		{
 			ShowMessage("Невозможно создать каталог для размещения файлов");
 			return;
-		}	
+		}
 
 	//формируем список перетащенных в главную форму файлов
 	char Filename[256];
@@ -85,8 +90,8 @@ void __fastcall TForm1::WMDROPFILES(TMessage &Msg)
 		}
 		catch(...)
 		{
-			Application->MessageBox("Невозможно открыть AutoCAD! Возможно "
-			"AutoCAD не установлен на компьютере.","Ошибка",MB_OK+MB_ICONERROR);
+			Application->MessageBox((wchar_t*)"Невозможно открыть AutoCAD! Возможно "
+			"AutoCAD не установлен на компьютере.",(wchar_t*)"Ошибка",MB_OK+MB_ICONERROR);
 			acad = NULL;
 		}
 	}
@@ -123,7 +128,7 @@ void TForm1::Calculate(string file_name)
 		Excel.OlePropertyGet("WorkBooks").OleProcedure("Open",file_template_name.c_str(),0,false,1);
 	}catch(...)
 	{
-		Application->MessageBox("Ошибка открытия книги Microsoft Excel!","Ошибка",MB_OK+MB_ICONERROR);
+		Application->MessageBox((wchar_t*)"Ошибка открытия книги Microsoft Excel!",(wchar_t*)"Ошибка",MB_OK+MB_ICONERROR);
 		return;
 	}
 
@@ -145,7 +150,9 @@ void TForm1::Calculate(string file_name)
 	//Формируем файл Excel с результатами вычислений
 	WriteGeoData(list_point);
 	WriteOpisanie2(list_point);
-	WriteAreaSheet(list_point);
+	double area = WriteAreaSheet(list_point);
+	WriteKatalog(list_point,area);
+	WriteEGRZSheet(list_point,area);
 	WriteOpisanie1(list_point);
 
 	//Формируем файл DWG с чертежом
@@ -171,7 +178,6 @@ void TForm1::Calculate(string file_name)
 //---------------------------------------------------------------------------
 void TForm1::WriteGeoData(const list<CPoint>& list_point)
 {
-	const int number_geo_data_sheet = 3;
 
 	Variant Sheet=Excel.OlePropertyGet("WorkSheets",number_geo_data_sheet);
 
@@ -191,7 +197,7 @@ void TForm1::WriteGeoData(const list<CPoint>& list_point)
 
 		toExcelCell(Sheet,row,1,tek->GetName());
 		toExcelCell(Sheet,row,2,CalculateDirectAngle(*tek,*sled).GetValue(af_TO_MINUTE));
-		toExcelCell(Sheet,row,3,FloatToStr(CalculateLength(*tek,*sled)));
+		toExcelCell(Sheet,row,3,(AnsiString)FloatToStr(CalculateLength(*tek,*sled)));
 
 		row++;
 		sled++;
@@ -202,8 +208,7 @@ void TForm1::WriteGeoData(const list<CPoint>& list_point)
 //------------------------------------------------------------------------
 void TForm1::WriteOpisanie1(const list<CPoint>& list_point)
 {
-	const int number_geo_data_sheet = 1;
-	Variant Sheet=Excel.OlePropertyGet("WorkSheets",number_geo_data_sheet);
+	Variant Sheet=Excel.OlePropertyGet("WorkSheets",number_opisanie1_sheet);
 	//определяем СКП положения МЗ
 	float rms;
 	switch (RGRMS->ItemIndex)
@@ -229,10 +234,10 @@ void TForm1::WriteOpisanie1(const list<CPoint>& list_point)
 	for(list<CPoint>::const_iterator i = list_point.begin();i != list_point.end();i++)
 		if(i->GetType() == tp_NEW)
 			new_point.push_back(*i);
-    new_point.sort();
+	new_point.sort();
 	int row = 9;                       	//Номер строки для вставки данных
 	//Создаем строки необходимые для помещения сведений о новых точках
-	InsertExcelRow(number_geo_data_sheet,row,new_point.size());
+	InsertExcelRow(number_opisanie1_sheet,row,new_point.size());
 
 	//Помещаем сведения в файл
 	for(list<CPoint>::const_iterator tek = new_point.begin();tek != new_point.end();tek++)
@@ -241,7 +246,7 @@ void TForm1::WriteOpisanie1(const list<CPoint>& list_point)
 		toExcelCell(Sheet,row,2,Variant(tek->GetNord()));
 		toExcelCell(Sheet,row,3,Variant(tek->GetEast()));
 		toExcelCell(Sheet,row,4,Variant(rms));
-		toExcelCell(Sheet,row,5,EPointZakr->Text);
+		toExcelCell(Sheet,row,5,(AnsiString)EPointZakr->Text);
 		row++;
 	}
 	//Очищаем ссылку на лист
@@ -251,8 +256,7 @@ void TForm1::WriteOpisanie1(const list<CPoint>& list_point)
 //------------------------------------------------------------------------
 void TForm1::WriteOpisanie2(const list<CPoint>& list_point)
 {
-	const int number_geo_data_sheet = 2;
-	Variant Sheet=Excel.OlePropertyGet("WorkSheets",number_geo_data_sheet);
+	Variant Sheet=Excel.OlePropertyGet("WorkSheets",number_opisanie2_sheet);
 	//Определяем допустимое расхождении при контрольном измерении линии
 	float rms = 2;
 	switch (RGRMS->ItemIndex)
@@ -298,14 +302,14 @@ void TForm1::WriteOpisanie2(const list<CPoint>& list_point)
 
 	int row = 8;                       	//Номер строки для вставки данных
 	//Создаем строки необходимые для помещения сведений о новых точках
-	InsertExcelRow(number_geo_data_sheet,row,list_new_lines.size()+list_uto4_lines.size()+list_exist_lines.size());
+	InsertExcelRow(number_opisanie2_sheet,row,list_new_lines.size()+list_uto4_lines.size()+list_exist_lines.size());
 
 	//Помещаем сведения об участках границ образованных существующими точками в файл,
 	//Необходимо вручную удалить существующие участки границ
 	for(list<CKadastrLine>::const_iterator i = list_exist_lines.begin();i != list_exist_lines.end();i++)
 	{
 		toExcelCell(Sheet,row,1,(i->GetBeginPoint().GetName() + " - " + i->GetEndPoint().GetName()));
-		toExcelCell(Sheet,row,2,FloatToStr(i->GetLength()));
+		toExcelCell(Sheet,row,2,(AnsiString)FloatToStr(i->GetLength()));
 		toExcelCell(Sheet,row,3,Variant(rms));
 		toExcelCell(Sheet,row,4,i->GetDirectAngle());
 		toExcelCell(Sheet,row,5,AnsiString("-"));
@@ -315,7 +319,7 @@ void TForm1::WriteOpisanie2(const list<CPoint>& list_point)
 	for(list<CKadastrLine>::const_iterator i = list_new_lines.begin();i != list_new_lines.end();i++)
 	{
 		toExcelCell(Sheet,row,1,(i->GetBeginPoint().GetName() + " - " + i->GetEndPoint().GetName()));
-		toExcelCell(Sheet,row,2,FloatToStr(i->GetLength()));
+		toExcelCell(Sheet,row,2,(AnsiString)FloatToStr(i->GetLength()));
 		toExcelCell(Sheet,row,3,Variant(rms));
 		toExcelCell(Sheet,row,4,i->GetDirectAngle());
 		toExcelCell(Sheet,row,5,AnsiString("-"));
@@ -325,7 +329,7 @@ void TForm1::WriteOpisanie2(const list<CPoint>& list_point)
 	for(list<CKadastrLine>::const_iterator i = list_uto4_lines.begin();i != list_uto4_lines.end();i++)
 	{
 		toExcelCell(Sheet,row,1,(i->GetBeginPoint().GetName() + " - " + i->GetEndPoint().GetName()));
-		toExcelCell(Sheet,row,2,FloatToStr(i->GetLength()));
+		toExcelCell(Sheet,row,2,(AnsiString)FloatToStr(i->GetLength()));
 		toExcelCell(Sheet,row,3,Variant(rms));
 		toExcelCell(Sheet,row,4,i->GetDirectAngle());
 		toExcelCell(Sheet,row,5,AnsiString("-"));
@@ -336,14 +340,13 @@ void TForm1::WriteOpisanie2(const list<CPoint>& list_point)
 
 }
 //---------------------------------------------------------------------------
-void TForm1::WriteAreaSheet(const list<CPoint>& list_point)
+double TForm1::WriteAreaSheet(const list<CPoint>& list_point)
 {
-	const int number_geo_data_sheet = 4;
-	Variant Sheet=Excel.OlePropertyGet("WorkSheets",number_geo_data_sheet);
+	Variant Sheet=Excel.OlePropertyGet("WorkSheets",number_area_sheet);
 
 	int row = 6;                       	//Номер строки для вставки данных
 	//Создаем строки необходимые для помещения сведений о новых точках
-	InsertExcelRow(number_geo_data_sheet,row,list_point.size());
+	InsertExcelRow(number_area_sheet,row,list_point.size());
 
 	//Помещаем сведения в файл
 	double col4 = 0, col5 = 0, col6 = 0, col7 = 0;
@@ -387,13 +390,69 @@ void TForm1::WriteAreaSheet(const list<CPoint>& list_point)
 
 	double S6 = fabs(sum6/2);
 	double S7 = fabs(sum7/2);
-	toExcelCell(Sheet,row,6,Variant(S6));
-	toExcelCell(Sheet,row,7,Variant(S7));
+	toExcelCell(Sheet,row,6,GetRoundAreaExcel(S6));
+	toExcelCell(Sheet,row,7,GetRoundAreaExcel(S7));
 	row++;
 
 	double s = (S6+S7)/2;
-	toExcelCell(Sheet,row,6,Variant(s));
+	AnsiString sArea = GetRoundAreaExcel(s);
+	DecimalSeparator;
+	toExcelCell(Sheet,row,6,sArea);
 	row++;
+	//Очищаем ссылку на лист
+	Sheet.Clear();
+	return s;
+}
+//---------------------------------------------------------------------------
+void TForm1::WriteKatalog(const list<CPoint>& list_point,double area)
+{
+	Variant Sheet=Excel.OlePropertyGet("WorkSheets",number_katalog_sheet);
+
+	int row = 6;                       	//Номер строки для вставки данных
+	//Создаем строки необходимые для помещения сведений о новых точках
+	InsertExcelRow(number_katalog_sheet,row,list_point.size()+1);
+
+	list<CPoint>::const_iterator sled = list_point.begin();
+	sled++;
+	double perim = 0;
+	for(list<CPoint>::const_iterator tek = list_point.begin();tek != list_point.end();tek++)
+	{
+		if(sled == list_point.end())
+		{
+			sled = list_point.begin();
+			toExcelCell(Sheet,row+1,1,sled->GetName());
+			toExcelCell(Sheet,row+1,2,(AnsiString)sled->GetNord());
+			toExcelCell(Sheet,row+1,3,(AnsiString)sled->GetEast());
+		}
+
+		toExcelCell(Sheet,row,1,tek->GetName());
+		toExcelCell(Sheet,row,2,(AnsiString)tek->GetNord());
+		toExcelCell(Sheet,row,3,(AnsiString)tek->GetEast());
+		toExcelCell(Sheet,row,4,CalculateDirectAngle(*tek,*sled).GetValue(af_TO_MINUTE));
+		toExcelCell(Sheet,row,5,(AnsiString)FloatToStr(CalculateLength(*tek,*sled)));
+
+		perim += CalculateLength(*tek,*sled);
+
+		row++;
+		sled++;
+	}
+	row+=2;
+	toExcelCell(Sheet,row,5,(AnsiString)FloatToStr(perim));
+	row++;
+	toExcelCell(Sheet,row,5,GetRoundAreaExcel(area));
+	row++;
+	toExcelCell(Sheet,row,5,AnsiString("=") + GetRMSArea(list_point,area));
+	row++;
+	//Очищаем ссылку на лист
+	Sheet.Clear();
+}
+//---------------------------------------------------------------------------
+void TForm1::WriteEGRZSheet(const list<CPoint>& list_point,double area)
+{
+	Variant Sheet=Excel.OlePropertyGet("WorkSheets",number_egrz_sheet);
+	AnsiString s = GetRoundAreaExcel(area) + "&" + GetRMSArea(list_point,area) + "& \"кв.м\"";
+
+	toExcelCell(Sheet,25,10,s);
 	//Очищаем ссылку на лист
 	Sheet.Clear();
 }
@@ -414,6 +473,92 @@ void TForm1::WriteDrawing(const list<CPoint>& list_point)
 	acad->WriteKadastrLines(list_lines);
 	acad->WriteKadastrPoints(list_point);
 	acad->BuildLayout();
+}
+//---------------------------------------------------------------------------
+AnsiString TForm1::GetRMSArea(const list<CPoint>& list_point,double area)
+{
+	//При расчете коэффициента вытянутости земельного исходили из следующих соображений:
+	//1.Коэффициент расчитывается как отношение усредненной ширины фигуры к усреденной длине фигуры
+	//2.Усред. шир. и длина определяются как сумма длин линий умноженных на соответствующие коэффициенты
+	//3.Соответствующие коэффициенты - доля длины линии, которая увеличивает соответственну ширину или длину фигуры,
+	//например, для усред.шир. - коэффициент возрастает от 0 до 1 при углах
+	//0-90,180-90,180-270,360-270
+	//Дирекционный угол первой стороны является базовым, для определения ширины фигуры
+
+	//Формируем список линий
+	list<CKadastrLine> list_lines;
+	{
+	list<CPoint>::const_iterator sled = list_point.begin();
+	++sled;
+	for(list<CPoint>::const_iterator tek = list_point.begin();tek != list_point.end();++tek,++sled)
+	{
+		if(sled == list_point.end())
+			sled = list_point.begin();
+		list_lines.push_back(CKadastrLine(*tek,*sled));
+	}
+	}
+
+	double width = 0,length = 0;
+	CAngle basis_angle;
+
+	list<CKadastrLine>::const_iterator sled = list_lines.begin();
+	++sled;
+	for(list<CKadastrLine>::const_iterator tek = list_lines.begin();tek != list_lines.end();++tek,++sled)
+	{
+		double len = CalculateLength(tek->GetBeginPoint(),tek->GetEndPoint());
+ 		if(tek == list_lines.begin())
+		{
+			width = len;
+
+			basis_angle = CalculateDirectAngle(tek->GetBeginPoint(),tek->GetEndPoint());
+			continue;
+		}
+		if(sled == list_lines.end())
+			sled = list_lines.begin();
+		CAngle B = -basis_angle + CalculateDirectAngle(tek->GetBeginPoint(),tek->GetEndPoint())+180;
+
+		while (!B.IsPositiv())
+			B = B + CAngle(360);
+		while (B.GetGradus()>=360)
+			B = B - CAngle(360);   
+		double k;
+		if(B <= CAngle(90))
+			k = 1 - double(B)/90;
+		else if(B <= CAngle(180))
+			k = double(B)/180;
+		else if(B <= CAngle(270))
+			k = 1 - double(B)/270;
+		else if(B < CAngle(360))
+			k = double(B)/360;
+
+
+		width += len * k;
+		length += len * (1 - k);
+
+	}
+	float rms;  //погрешность положения МЗ
+	switch (RGRMS->ItemIndex)
+	{
+	case 0:
+		rms=0.1;
+		break;
+	case 1:
+		rms = 0.2;
+		break;
+	case 2:
+		rms = 0.5;
+		break;
+	case 3:
+		rms = 2.5;
+		break;
+	case 4:
+		rms = 5.0;
+		break;
+	}
+	double k = (width > length) ? (width / length) : (length / width);
+	double areaRMS = rms * sqrt(area)*sqrt((k+1)/(2*k));   //инструкция по межеванию земель 1996 г.
+	AnsiString s = AnsiString("\" ± \"&") + "Округл(" + FloatToStr(areaRMS)+ListSeparator + "0)";
+	return s;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::toExcelCell(Variant Sheet,int Row,int Column, AnsiString data)
@@ -441,14 +586,14 @@ void __fastcall TForm1::InsertExcelRow(int Sheet,int sRow,int count)
 //------------------------------------------------------------------------
 void __fastcall TForm1::BSelectFolderClick(TObject *Sender)
 {
-	AnsiString Directory;
+	UnicodeString Directory;
 	//Проверяем существует ли текущая директория
 	if(DirectoryExists(EDestinationFolder->Text))
 		Directory = EDestinationFolder->Text;
 	else
 		Directory = GetCurrentDir();
-	if(SelectDirectory("Укажите каталог для сохранения результатов вычисления",
-						"",Directory))
+	if(SelectDirectory((UnicodeString)"Укажите каталог для сохранения результатов вычисления",
+						(WideString)"",Directory))
 	{
 		EDestinationFolder->Hint = Directory;
 		EDestinationFolder->Text = Directory;
@@ -490,7 +635,7 @@ void TForm1::LoadOptions()
 	EPointZakr->Text = Ini->ReadString("Default val",EPointZakr->Name,0);
 	EDestinationFolder->Text = Ini->ReadString("Default val",EDestinationFolder->Name,0);
 	EDestinationFolder->Hint = EDestinationFolder->Text;
-	CHBExistGranic->Checked = Ini->ReadBool("Default val",CHBExistGranic->Name,false);  
+	CHBExistGranic->Checked = Ini->ReadBool("Default val",CHBExistGranic->Name,false);
 	CBACADDrawing->Checked = Ini->ReadBool("Default val",CBACADDrawing->Name,true);
 	delete Ini;
 }
@@ -516,8 +661,8 @@ bool TForm1::CreateExcel()
 		Excel.OlePropertySet("DisplayAlerts", false);
 	}catch(...)
 	{
-		Application->MessageBox("Невозможно открыть Microsoft Excel! Возможно "
-		"Excel не установлен на компьютере.","Ошибка",MB_OK+MB_ICONERROR);
+		Application->MessageBox((wchar_t*)"Невозможно открыть Microsoft Excel! Возможно "
+		"Excel не установлен на компьютере.",(wchar_t*)"Ошибка",MB_OK+MB_ICONERROR);
 		return false;
 	}
 	return true;
@@ -530,3 +675,11 @@ void TForm1::DestroyExcel()
 	Excel.Clear();
 }
 //---------------------------------------------------------------------------
+void __fastcall TForm1::BBKadSetkaClick(TObject *Sender)
+{
+	Visible = false;
+	FDrawKadSetka->ShowModal();
+	Visible = true;
+}
+//---------------------------------------------------------------------------
+

@@ -43,8 +43,10 @@ public:
 
 	void BuildLayout();
 
-	bool GetSelectParcel(Parcel& parcel)const;
-	void cACAD::GetPoints(list<CAutoCADPoint>& points)const;
+	bool GetSelectParcel(Parcel& parcel,AnsiString msg)const;
+	void GetPoints(list<CAutoCADPoint>& points)const;
+	void DrawKadSetka(double scale,CPoint ParcelMaxCoord,CPoint ParcelMinCoord,
+					  CPoint KwartalMaxCoord, CPoint KwartalMinCoord);
 
 private:
 	void CalculateScaleVP(const list<CPoint>& points) const;        //расчитать масштаб видового экрана,

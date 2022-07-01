@@ -21,6 +21,7 @@
 USEFORM("MainForm.cpp", Form1);
 USEFORM("FormNumLine.cpp", FNumer);
 USEFORM("AboutBoxForm.cpp", FAboutBox);
+USEFORM("FKadSetka.cpp", FDrawKadSetka);
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -31,6 +32,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		Application->CreateForm(__classid(TForm1), &Form1);
 		Application->CreateForm(__classid(TFNumer), &FNumer);
 		Application->CreateForm(__classid(TFAboutBox), &FAboutBox);
+		Application->CreateForm(__classid(TFDrawKadSetka), &FDrawKadSetka);
 		Application->Run();
 	}
 	catch (Exception &exception)

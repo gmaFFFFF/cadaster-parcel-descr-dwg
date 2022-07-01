@@ -34,7 +34,7 @@ void __fastcall TFNumer::BNumerateClick(TObject *Sender)
 	list<CAutoCADPoint> points;
 
 	//Получаем участок выделенный пользователем
-	acad->GetSelectParcel(*parcel);
+	acad->GetSelectParcel(*parcel,"Укажите участок... ");
 	//Считываем из черетежа имеющиеся точки
 	acad->GetPoints(points);
 

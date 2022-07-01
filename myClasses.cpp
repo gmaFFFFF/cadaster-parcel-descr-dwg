@@ -514,7 +514,7 @@ CAngle Parcel::GetSumAngle(bool left)const
 					CalculateDirectAngle(tek->GetBeginPoint(),tek->GetEndPoint()) -
 					CAngle(180);
 		while (!B.IsPositiv())
-			B = B + CAngle(360);  
+			B = B + CAngle(360);
 		while (B.GetGradus()>360)
 			B = B - CAngle(360);
 		sumAngle = B + sumAngle;
@@ -533,7 +533,7 @@ list<CAutoCADPoint>::iterator Parcel::FindPoint(const CAutoCADPoint& existPoint)
 		CAutoCADPoint::dopusk = dopusk;
 		for(list<CAutoCADPoint>::iterator i = points.begin();i != points.end();++i)
 			if(*i == existPoint)
-			{    
+			{
 				CAutoCADPoint::dopusk = old_dopusk;
 				return i;
 			}

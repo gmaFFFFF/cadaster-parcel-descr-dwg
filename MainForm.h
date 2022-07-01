@@ -25,11 +25,12 @@
 #include <Forms.hpp>
 #include <ExtCtrls.hpp>
 #include <ComCtrls.hpp>
+#include <Buttons.hpp>
 #include <string>
-#include <ComObj.hpp> 
+#include <ComObj.hpp>
 #include <list>
- 
-#include "myClasses.h"   
+
+#include "myClasses.h"
 #include "cACAD.cpp"
 #include "FormNumLine.h"
 #include "AboutBoxForm.h"
@@ -49,12 +50,14 @@ __published:	// IDE-managed Components
 	TCheckBox *CBACADDrawing;
 	TButton *BAbout;
 	TButton *BACAD;
+	TBitBtn *BBKadSetka;
 	void __fastcall FormCreate(TObject *Sender);
 	void __fastcall FormDestroy(TObject *Sender);
 	void __fastcall WMDROPFILES(TMessage &Msg);
 	void __fastcall BSelectFolderClick(TObject *Sender);
 	void __fastcall BACADClick(TObject *Sender);
 	void __fastcall BAboutClick(TObject *Sender);
+	void __fastcall BBKadSetkaClick(TObject *Sender);
 private:	// User declarations
 	void __fastcall toExcelCell(Variant Sheet, int Row,int Column, Variant data);
 	void __fastcall toExcelCell(Variant Sheet,int Row,int Column, AnsiString data);
@@ -64,12 +67,16 @@ private:	// User declarations
     void WriteGeoData(const list<CPoint>& list_point);
 	void WriteOpisanie1(const list<CPoint>& list_point);
 	void WriteOpisanie2(const list<CPoint>& list_point);
-	void WriteAreaSheet(const list<CPoint>& list_point);  
+	void WriteKatalog(const list<CPoint>& list_point,double area);
+	double WriteAreaSheet(const list<CPoint>& list_point);
+	void WriteEGRZSheet(const list<CPoint>& list_point,double area);
 	void WriteDrawing(const list<CPoint>& list_point);
 	void SaveOptions();
 	void LoadOptions();
 	bool CreateExcel();
 	void DestroyExcel();
+	AnsiString GetRoundAreaExcel(double Area){return "=Округл("+FloatToStr(Area)+ListSeparator + "0)";}
+	AnsiString GetRMSArea(const list<CPoint>& list_point,double area);
 
 	Variant Excel;    //Файл Excel;
 	cACAD* acad;

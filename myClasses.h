@@ -148,6 +148,7 @@ public:
 	void Reverse();
 	void SetColor(AcColor color = acByLayer);
 	void SetLayer(Variant name);
+	list<CAutoCADPoint>& GetPoints(){return points;}
 
 private:
 	CAngle GetSumAngle(bool left = true)const;

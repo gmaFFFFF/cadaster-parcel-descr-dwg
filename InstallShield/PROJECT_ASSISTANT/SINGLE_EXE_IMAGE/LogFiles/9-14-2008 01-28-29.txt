@@ -1,2 +1,0 @@
-================= Logging started at 9/14/2008 01:28:29 ==================
-ISDEV : error -1024: ISDEV : error -1024: PROJECT_ASSISTANT\SINGLE_EXE_IMAGE . ================= Logging stopped at 9/14/2008 01:28:33 ==================
